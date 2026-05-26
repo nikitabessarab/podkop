@@ -637,8 +637,23 @@ msgstr ""
 msgid "Outbound Config"
 msgstr ""
 
+#: ../luci-app-podkop/htdocs/luci-static/resources/view/podkop/section.js:30
+msgid "Full sing-box config"
+msgstr ""
+
 #: ../luci-app-podkop/htdocs/luci-static/resources/view/podkop/section.js:65
 msgid "Outbound Configuration"
+msgstr ""
+
+#: ../luci-app-podkop/htdocs/luci-static/resources/view/podkop/section.js:89
+msgid "Full sing-box configuration"
+msgstr ""
+
+#: ../luci-app-podkop/htdocs/luci-static/resources/view/podkop/section.js:90
+msgid ""
+"Enter the complete sing-box configuration in JSON format. It will be written "
+"to the sing-box config file as-is, replacing the automatically generated "
+"configuration."
 msgstr ""
 
 #: src/podkop/tabs/diagnostic/initController.ts:446

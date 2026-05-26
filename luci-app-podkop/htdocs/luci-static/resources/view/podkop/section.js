@@ -27,6 +27,7 @@ function createSectionContent(section) {
   o.value("selector", _("Selector"));
   o.value("urltest", _("URLTest"));
   o.value("outbound", _("Outbound Config"));
+  o.value("full", _("Full sing-box config"));
   o.default = "url";
   o.depends("connection_type", "proxy");
 
@@ -69,6 +70,31 @@ function createSectionContent(section) {
   o.rows = 10;
   o.validate = function (section_id, value) {
     // Optional
+    if (!value || value.length === 0) {
+      return true;
+    }
+
+    const validation = main.validateOutboundJson(value);
+
+    if (validation.valid) {
+      return true;
+    }
+
+    return validation.message;
+  };
+
+  o = section.option(
+    form.TextValue,
+    "singbox_full_json",
+    _("Full sing-box configuration"),
+    _(
+      "Enter the complete sing-box configuration in JSON format. It will be written to the sing-box config file as-is, replacing the automatically generated configuration.",
+    ),
+  );
+  o.depends("proxy_config_type", "full");
+  o.rows = 20;
+  o.rmempty = false;
+  o.validate = function (section_id, value) {
     if (!value || value.length === 0) {
       return true;
     }

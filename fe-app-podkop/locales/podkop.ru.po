@@ -464,6 +464,20 @@ msgstr "Конфигурация Outbound"
 msgid "Outbound Configuration"
 msgstr "Конфигурация исходящего соединения"
 
+msgid "Full sing-box config"
+msgstr "Полный конфиг sing-box"
+
+msgid "Full sing-box configuration"
+msgstr "Полный конфиг sing-box"
+
+msgid ""
+"Enter the complete sing-box configuration in JSON format. It will be written "
+"to the sing-box config file as-is, replacing the automatically generated "
+"configuration."
+msgstr ""
+"Введите полный конфиг sing-box в формате JSON. Он будет записан в файл "
+"конфигурации sing-box как есть, заменяя автоматически сгенерированный конфиг."
+
 msgid "Outdated"
 msgstr "Устаревшая"
 

@@ -113,6 +113,12 @@ export namespace Podkop {
     outbound_json: string;
   }
 
+  export interface ConfigProxyFullSection {
+    connection_type: 'proxy';
+    proxy_config_type: 'full';
+    singbox_full_json: string;
+  }
+
   export interface ConfigVpnSection {
     connection_type: 'vpn';
     interface: string;
@@ -127,6 +133,7 @@ export namespace Podkop {
     | ConfigProxySelectorSection
     | ConfigProxyUrlSection
     | ConfigProxyOutboundSection
+    | ConfigProxyFullSection
     | ConfigVpnSection
     | ConfigBlockSection;
 

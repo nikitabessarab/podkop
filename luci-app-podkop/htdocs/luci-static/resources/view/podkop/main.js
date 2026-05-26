@@ -757,6 +757,14 @@ async function getDashboardSections() {
           ]
         };
       }
+      if (section.proxy_config_type === "full") {
+        return {
+          withTagSelect: false,
+          code: section[".name"],
+          displayName: section[".name"],
+          outbounds: []
+        };
+      }
       if (section.proxy_config_type === "selector") {
         const selector = proxies.find(
           (proxy) => proxy.code === `${section[".name"]}-out`

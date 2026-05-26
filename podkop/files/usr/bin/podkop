@@ -78,23 +78,24 @@ check_requirements() {
     if has_outbound_section; then
         log "Outbound section found" "debug"
     else
-        log "Outbound section not found. Please check your configuration file (missing proxy_string, selector_proxy_links, urltest_proxy_links, outbound_json, or interface). Aborted." "error"
+        log "Outbound section not found. Please check your configuration file (missing proxy_string, selector_proxy_links, urltest_proxy_links, outbound_json, singbox_full_json, or interface). Aborted." "error"
         exit 1
     fi
 }
 
 _check_outbound_section() {
     local section="$1"
-    local proxy_string interface outbound_json urltest_proxy_links
+    local proxy_string interface outbound_json singbox_full_json urltest_proxy_links
 
     config_get proxy_string "$section" "proxy_string"
     config_get selector_proxy_links "$section" "selector_proxy_links"
     config_get urltest_proxy_links "$section" "urltest_proxy_links"
     config_get outbound_json "$section" "outbound_json"
+    config_get singbox_full_json "$section" "singbox_full_json"
     config_get interface "$section" "interface"
 
     if [ -n "$proxy_string" ] || [ -n "$selector_proxy_links" ] || [ -n "$urltest_proxy_links" ] ||
-        [ -n "$outbound_json" ] || [ -n "$interface" ]; then
+        [ -n "$outbound_json" ] || [ -n "$singbox_full_json" ] || [ -n "$interface" ]; then
         section_exists=0
     fi
 }
@@ -577,7 +578,62 @@ sing_box_configure_service() {
     [ -f /etc/rc.d/S99sing-box ] && log "Disable sing-box" && /etc/init.d/sing-box disable
 }
 
+_find_full_singbox_config_section() {
+    local section="$1"
+    local connection_type proxy_config_type singbox_full_json
+
+    config_get connection_type "$section" "connection_type"
+    [ "$connection_type" = "proxy" ] || return 0
+
+    config_get proxy_config_type "$section" "proxy_config_type"
+    [ "$proxy_config_type" = "full" ] || return 0
+
+    config_get singbox_full_json "$section" "singbox_full_json"
+    [ -n "$singbox_full_json" ] || return 0
+
+    if [ -n "$FULL_SINGBOX_CONFIG_SECTION" ] && [ "$FULL_SINGBOX_CONFIG_SECTION" != "$section" ]; then
+        log "Multiple sections with full sing-box config are not supported. Using section '$FULL_SINGBOX_CONFIG_SECTION'." "warn"
+        return 0
+    fi
+
+    FULL_SINGBOX_CONFIG_SECTION="$section"
+}
+
+get_full_singbox_config_section() {
+    FULL_SINGBOX_CONFIG_SECTION=""
+    config_foreach _find_full_singbox_config_section "section"
+    echo "$FULL_SINGBOX_CONFIG_SECTION"
+}
+
+sing_box_apply_full_config() {
+    local section="$1"
+    local singbox_full_json
+
+    log "Applying full sing-box configuration from section '$section'"
+
+    config_get singbox_full_json "$section" "singbox_full_json"
+    if [ -z "$singbox_full_json" ]; then
+        log "Full sing-box config is not set for section '$section'. Aborted." "fatal"
+        exit 1
+    fi
+
+    if ! echo "$singbox_full_json" | jq -e . > /dev/null 2>&1; then
+        log "Full sing-box config is not valid JSON. Aborted." "fatal"
+        exit 1
+    fi
+
+    config="$singbox_full_json"
+    sing_box_save_config
+}
+
 sing_box_init_config() {
+    local full_config_section
+    full_config_section="$(get_full_singbox_config_section)"
+    if [ -n "$full_config_section" ]; then
+        sing_box_apply_full_config "$full_config_section"
+        return
+    fi
+
     local config='{"log":{},"dns":{},"ntp":{},"certificate":{},"endpoints":[],"inbounds":[],"outbounds":[],"route":{},"services":[],"experimental":{}}'
 
     sing_box_configure_log
@@ -711,6 +767,9 @@ configure_outbound_handler() {
             config="$(sing_box_cm_add_urltest_outbound "$config" "$urltest_tag" "$urltest_outbounds" \
                 "$urltest_testing_url" "$urltest_check_interval" "$urltest_tolerance")"
             config="$(sing_box_cm_add_selector_outbound "$config" "$selector_tag" "$selector_outbounds" "$urltest_tag")"
+            ;;
+        full)
+            log "Detected proxy configuration type: full (applied from singbox_full_json)" "debug"
             ;;
         *)
             log "Unknown proxy configuration type: '$proxy_config_type'. Aborted." "fatal"
@@ -1839,6 +1898,7 @@ show_config() {
 
     sed -e 's/\(option proxy_string\).*/\1 '\''MASKED'\''/g' \
         -e '/option outbound_json/,/^}/c\	option outbound_json '\''MASKED'\''' \
+        -e '/option singbox_full_json/,/^}/c\	option singbox_full_json '\''MASKED'\''' \
         -e 's/\(list urltest_proxy_links\).*/\1 '\''MASKED'\''/g' \
         -e 's/\(list selector_proxy_links\).*/\1 '\''MASKED'\''/g' \
         -e "s@\\(option dns_server '[^/]*\\)/[^']*'@\\1/MASKED'@g" \
